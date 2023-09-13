@@ -1,13 +1,14 @@
 import subprocess
 from datetime import datetime
-from check_ssl import main  
+from check_ssl import ssl_email_task  
 
 # Replace with your URL and desired email recipient
 url = "ciaobella.obsi.com.au"
 recipient_email = "example@example.com"
 
 # Call the main function to get the remaining days until expiration
-remaining_days = main(url, date_threshold=30)
+remaining_days = ssl_email_task(url, date_threshold=30)
+print(remaining_days)
 
 if remaining_days is not None:
     # Schedule a cron job based on the remaining days

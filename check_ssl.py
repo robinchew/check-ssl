@@ -40,29 +40,22 @@ def send_email(email_host, email_port, user, password, email_from, email_to, ema
 #     print(f"Subject: {email_subject}")
 #     print(f"Body: {email_body}")
 
-def get_open_ssl_output():
+def get_open_ssl_output(url):
     # Construct the command
-    command = 'echo|openssl s_client -connect github.com:443 |openssl x509 -noout -dates'
+    command = 'echo | openssl s_client -connect {}:443 | openssl x509 -noout -dates'.format(url)
     return subprocess.run(command, shell=True, capture_output=True, text=True, check=True).stdout
 
-def find_ssl(test_result=None):
+def find_ssl(url, test_result=None):
     
-    result = get_open_ssl_output()
+    result = get_open_ssl_output(url)
 
     # Extract stdout from CompletedProcess object
     output = test_result or result
 
-    # Split the output into lines
-    output_lines = output.strip().split('\n')
-
     # Find the lines containing certificate dates
-    valid_from = None
-    valid_until = None
-    for line in output_lines:
-        if 'notBefore=' in line:
-            valid_from = line.split('=')[1].strip()
-        elif 'notAfter=' in line:
-            valid_until = line.split('=')[1].strip()
+    output_dic = dict(line.split('=') for line in output.strip().split('\n'))
+    valid_from = output_dic['notBefore']
+    valid_until = output_dic['notAfter']
 
     # Update the date format to match the modified format
     date_format = '%b %d %H:%M:%S %Y %Z'
@@ -72,27 +65,36 @@ def find_ssl(test_result=None):
     return valid_from_date, valid_until_date
 
 
-def main(url, date_threshold=30):
-    valid_from_date, valid_until_date = find_ssl()
-    
-    if valid_from_date and valid_until_date:
-        remaining_days = (valid_until_date - datetime.now()).days
-        print("{} has {} days remaining on SSL".format(url, remaining_days))
-        if remaining_days <= date_threshold:
-            # Enter emails details to be sent
-            email_from = "your_email@example.com"
-            email_subject = "SSL Certificate Expiration Alert"
-            email_body = f"The SSL certificate for {url} will expire in {remaining_days} days."
-            send_email(email_from, email_subject, email_body)
-        else:
-            # Reschedule?
-            print("OKAY SSL")
-            return remaining_days
+def ssl_email_task(url, date_threshold=30):
+
+    valid_from_date, valid_until_date = find_ssl(url)
+    remaining_days = (valid_until_date - datetime.now()).days
+    print("{} has {} days remaining on SSL".format(url, remaining_days))
+
+    if remaining_days <= date_threshold:
+        # Enter emails details to be sent
+        email_from = "example@somemail.com"
+        email_subject = "SSL Certificate Expiration Alert"
+        email_body = f"The SSL certificate for {url} will expire in {remaining_days} days."
+        email_host = "smtp.somemail.com"
+        email_port = 465
+        user = "user1"
+        password = "asacasas12"
+        email_to = "somemail@yahoo.com"
+        
+        send_email(email_host, email_port, user, password, email_from, email_to, email_body, email_subject)
     else:
-        print("Certificate information not found.")
+        # Reschedule?
+        print("OKAY SSL")
+        return remaining_days
+
 
 
 # Test websites
 # print(main("ciaobella.obsi.com.au"))
 # print(main("unitel.mn"))
 
+if __name__ ==  '__main__':
+  
+  ssl_email_task('ciaobella.obsi.com.au')
+  
