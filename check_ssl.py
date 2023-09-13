@@ -32,13 +32,6 @@ def send_email(email_host, email_port, user, password, email_from, email_to, ema
 
     return
 
-# E-mail Test Dummy Function
-# def send_email(email_from, email_subject, email_body):
-#     print("Email sent:")
-#     print(f"From: {email_from}")
-#     print(f"Subject: {email_subject}")
-#     print(f"Body: {email_body}")
-
 def get_open_ssl_output(url):
     # Construct the command
     command = 'echo | openssl s_client -connect {}:443 | openssl x509 -noout -dates'.format(url)
@@ -89,9 +82,9 @@ def ssl_email_task(url, email_host, email_user, email_password, email_from, emai
 
 if __name__ ==  '__main__':
 
-    email_host = os.environ.get('EMAIL_HOST')
-    email_username = os.environ.get('EMAIL_USERNAME')
-    email_password = os.environ.get('EMAIL_PASSWORD')
+    email_host = os.environ['EMAIL_HOST']
+    email_username = os.environ['EMAIL_USERNAME']
+    email_password = os.environ['EMAIL_PASSWORD']
     email_from = os.environ['EMAIL_FROM']
     email_to = os.environ['EMAIL_TO']
 
