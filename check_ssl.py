@@ -2,8 +2,8 @@ import subprocess
 import smtplib
 from uuid import uuid4
 import inspect
-from datetime import datetime, timezone
-from unittest.mock import patch
+from datetime import datetime
+import os
 
 # Send email
 def send_email(email_host, email_port, user, password, email_from, email_to, email_body, email_subject):
@@ -17,19 +17,18 @@ def send_email(email_host, email_port, user, password, email_from, email_to, ema
 
     %s
     """) % (email_from, email_to, email_subject, email_body)
-    try:
-        smtp = smtplib.SMTP_SSL if email_port == 465 else smtplib.SMTP
-        smtp_server = smtp(email_host, email_port)
-        smtp_server.ehlo()
+    
+    smtp = smtplib.SMTP_SSL if email_port == 465 else smtplib.SMTP
+    smtp_server = smtp(email_host, email_port)
+    smtp_server.ehlo()
 
-        if email_port == 465:
-            smtp_server.login(user, password)
+    if email_port == 465:
+        smtp_server.login(user, password)
 
-        smtp_server.sendmail(email_from, email_to, email_text.encode('UTF-8'))
-        smtp_server.close()
-        print ("Email sent successfully!")
-    except Exception as ex:
-        print ("Something went wrong….",ex)
+    smtp_server.sendmail(email_from, email_to, email_text.encode('UTF-8'))
+    smtp_server.close()
+    print ("Email sent successfully!")
+
 
     return
 
@@ -46,11 +45,9 @@ def get_open_ssl_output(url):
     return subprocess.run(command, shell=True, capture_output=True, text=True, check=True).stdout
 
 def find_ssl(url, test_result=None):
-    
-    result = get_open_ssl_output(url)
 
     # Extract stdout from CompletedProcess object
-    output = test_result or result
+    output = test_result or get_open_ssl_output(url)
 
     # Find the lines containing certificate dates
     output_dic = dict(line.split('=') for line in output.strip().split('\n'))
@@ -65,36 +62,40 @@ def find_ssl(url, test_result=None):
     return valid_from_date, valid_until_date
 
 
-def ssl_email_task(url, date_threshold=30):
+def ssl_email_task(url, email_host, email_user, email_password, email_from, email_to, date_threshold=30):
 
     valid_from_date, valid_until_date = find_ssl(url)
     remaining_days = (valid_until_date - datetime.now()).days
     print("{} has {} days remaining on SSL".format(url, remaining_days))
 
     if remaining_days <= date_threshold:
+
         # Enter emails details to be sent
-        email_from = "example@somemail.com"
         email_subject = "SSL Certificate Expiration Alert"
         email_body = f"The SSL certificate for {url} will expire in {remaining_days} days."
-        email_host = "smtp.somemail.com"
         email_port = 465
-        user = "user1"
-        password = "asacasas12"
-        email_to = "somemail@yahoo.com"
         
-        send_email(email_host, email_port, user, password, email_from, email_to, email_body, email_subject)
+        send_email(email_host, email_port, email_user, email_password, email_from, email_to, email_body, email_subject)
     else:
-        # Reschedule?
-        print("OKAY SSL")
+        
+        print("SSL Certificate expiration date is acceptable.")
         return remaining_days
 
 
 
 # Test websites
 # print(main("ciaobella.obsi.com.au"))
-# print(main("unitel.mn"))
+
 
 if __name__ ==  '__main__':
-  
-  ssl_email_task('ciaobella.obsi.com.au')
+
+    email_host = os.environ.get('EMAIL_HOST')
+    email_username = os.environ.get('EMAIL_USERNAME')
+    email_password = os.environ.get('EMAIL_PASSWORD')
+    email_from = os.environ['EMAIL_FROM']
+    email_to = os.environ['EMAIL_TO']
+
+    url = 'ciaobella.obsi.com.au'
+
+    ssl_email_task(url, email_host, email_host, email_password, email_from, email_to)
   
