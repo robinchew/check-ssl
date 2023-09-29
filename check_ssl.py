@@ -90,5 +90,4 @@ if __name__ ==  '__main__':
 
     url = 'ciaobella.obsi.com.au'
 
-    ssl_email_task(url, email_host, email_host, email_password, email_from, email_to)
-  
+    ssl_email_task(url, email_host, email_username, email_password, email_from, email_to)
